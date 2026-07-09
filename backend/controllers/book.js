@@ -1,4 +1,3 @@
-const { flushSync } = require('react-dom');
 const Book = require('../models/Book')
 const fs = require('fs');
 
