@@ -1,4 +1,5 @@
 const dns = require('dns');
+const path = require('path');
 dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
@@ -32,5 +33,6 @@ app.use(bodyParser.json());
 
 app.use('/api/books', bookRoutes);
 app.use('/api/auth', userRoutes);
+app.use('/images', express.static(this.path.join(__dirname, 'images')));
 
 module.exports = app;
