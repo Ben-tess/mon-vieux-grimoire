@@ -1,30 +1,37 @@
-const Book = require('../models/Book')
+const Book = require('../models/Book');
+const optimizeImage = require('../middleware/image-optimizer');
 const fs = require('fs');
 
-exports.createBook = (req, res, next) => {
+exports.createBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
+  const filename = await optimizeImage(req.file);
   const book = new Book({
     ...bookObject,
     userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+    imageUrl: `${req.protocol}://${req.get('host')}/images/${filename}`
   });
   book.save()
     .then(() => res.status(201).json({ message: 'Livre enregistré' }))
     .catch(error => res.status(400).json({ error }));
 };
 
-exports.modifyBook = (req, res, next) => {
-  const bookObject = req.file ? {
-    ...JSON.parse(req.body.book),
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-  } : { ...req.body };
+exports.modifyBook = async (req, res, next) => {
+  const bookObject = req.file
+    ? JSON.parse(req.body.book)
+    : { ...req.body };
   delete bookObject._userId;
+
+  if (req.file) {
+    const filename = await optimizeImage(req.file);
+    bookObject.imageUrl = `${req.protocol}://${req.get('host')}/images/${filename}`;
+  }
+
   Book.findOne({_id: req.params.id})
   .then((book) => {
     if (book.userId != req.auth.userId) {
-      res.status(403).json({ message: 'unauthorized request' })
+      return res.status(403).json({ message: 'unauthorized request' })
     } else {
       Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
       .then(() => res.status(200).json({ message: 'Livre modifié' }))
